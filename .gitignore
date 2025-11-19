@@ -1,0 +1,98 @@
+##############################
+## IDE - IntelliJ IDEA
+##############################
+.idea/
+.idea_modules/
+*.iml
+*.ipr
+*.iws
+.kotlin
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+##############################
+## IDE - Eclipse
+##############################
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+.loadpath
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+tmp/
+.metadata
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+
+##############################
+## IDE - NetBeans
+##############################
+nbproject/private/
+/nbproject/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+nbactions.xml
+nb-configuration.xml
+
+##############################
+## IDE - VS Code
+##############################
+.vscode/
+.code-workspace
+
+##############################
+## Build Systems - Maven
+##############################
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+pom.xml.bak
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+##############################
+## Build Systems - Gradle
+##############################
+build/
+.gradle
+.gradletasknamecache
+gradle-app.setting
+!gradle-wrapper.jar
+
+##############################
+## Java & Runtime
+##############################
+.mtj.tmp/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+##############################
+## OS Specific
+##############################
+.DS_Store
+
+##############################
+## Logs & Miscellaneous
+##############################
+*.log
