@@ -5,7 +5,7 @@ import java.util.*;
 import java.util.List;
 
 /**
- * Визуальная демонстрация алгоритма муравьёв по ТЗ.
+ * Визуальная демонстрация алгоритма муравьёв по ТЗ и PDF.
  * Один файл, Java 25, Swing GUI.
  */
 public class AntColonyDemo extends JFrame {
@@ -19,7 +19,8 @@ public class AntColonyDemo extends JFrame {
     private static final double ALPHA = 1.0;  // значимость фермента
     private static final double BETA = 5.0;   // значимость расстояния
 
-    // Параметр испарения фермента (0 < RHO < 1)
+    // Параметр ρ из PDF: коэффициент "сохранения" фермента (0 < RHO < 1)
+    // τ_ij(t+1) = Δτ_ij(t) + ρ * τ_ij(t)
     private static final double RHO = 0.5;
 
     // Параметр Q для вычисления вклада фермента (Q / длина пути)
@@ -41,7 +42,7 @@ public class AntColonyDemo extends JFrame {
     private Simulation simulation;      // не final — пересоздаём при смене числа узлов
     private boolean running = false;
 
-    // ==== ВНУТРЕННИЕ КЛАССЫ МОДЕЛИ ====
+    // ==== КОНСТРУКТОР GUI ====
 
     public AntColonyDemo() {
         super("Алгоритм муравьёв (Ant Colony) - визуализация по ТЗ");
@@ -128,12 +129,16 @@ public class AntColonyDemo extends JFrame {
         setLocationRelativeTo(null);
     }
 
+    // ==== ТОЧКА ВХОДА ====
+
     static void main() {
         SwingUtilities.invokeLater(() -> {
             AntColonyDemo demo = new AntColonyDemo();
             demo.setVisible(true);
         });
     }
+
+    // ==== ВНУТРЕННИЕ КЛАССЫ МОДЕЛИ ====
 
     /**
          * Узел графа (нормализованные координаты в [0;1])
@@ -170,8 +175,6 @@ public class AntColonyDemo extends JFrame {
             return !finished;
         }
     }
-
-    // ==== КОНСТРУКТОР GUI ====
 
     /**
      * Основная логика алгоритма муравьёв: граф, расстояния, ферменты, муравьи.
@@ -376,7 +379,7 @@ public class AntColonyDemo extends JFrame {
             int next = selectNextNode(current, allowed);
             if (next == -1) {
                 // На всякий случай fallback: выбираем случайный допустимый
-                next = allowed.get(random.nextInt(allowed.size()));
+                next = allowed.get(new Random().nextInt(allowed.size()));
             }
 
             double dist = distance[current][next];
@@ -391,7 +394,7 @@ public class AntColonyDemo extends JFrame {
         }
 
         /**
-         * Вероятностный выбор следующего узла согласно формуле из ТЗ.
+         * Вероятностный выбор следующего узла согласно формуле из ТЗ/PDF.
          */
         private int selectNextNode(int currentNode, List<Integer> allowed) {
             double[] desirability = new double[allowed.size()];
@@ -399,11 +402,11 @@ public class AntColonyDemo extends JFrame {
 
             for (int i = 0; i < allowed.size(); i++) {
                 int u = allowed.get(i);
-                double tau = pheromone[currentNode][u];       // интенсивность фермента
-                double dist = distance[currentNode][u];       // расстояние
+                double tau = pheromone[currentNode][u];       // интенсивность фермента τ(r,u)
+                double dist = distance[currentNode][u];       // расстояние d(r,u)
                 if (dist == 0.0) dist = 1e-6;                 // защита от деления на 0
 
-                double eta = 1.0 / dist; // эвристика: чем ближе, тем лучше
+                double eta = 1.0 / dist; // η(r,u) = 1 / d(r,u)
                 double value = Math.pow(tau, ALPHA) * Math.pow(eta, BETA);
 
                 desirability[i] = value;
@@ -412,7 +415,7 @@ public class AntColonyDemo extends JFrame {
 
             if (sum <= 0.0) {
                 // Все значения нулевые — выбираем случайный узел из allowed
-                return allowed.get(random.nextInt(allowed.size()));
+                return allowed.get(new Random().nextInt(allowed.size()));
             }
 
             // Рулетка: вероятностный выбор на основе desirability / sum
@@ -425,25 +428,28 @@ public class AntColonyDemo extends JFrame {
                 }
             }
 
-            // На всякий случай
+            // На всякий случай (из-за возможных ошибок округления)
             return allowed.getLast();
         }
 
         /**
-         * Обновление фермента согласно ТЗ:
-         * - испарение
-         * - добавление Q / длина_пути по рёбрам всех муравьёв
-         * - обновление лучшего маршрута
+         * Обновление фермента согласно PDF:
+         * Δτ_ij^k(t) = Q / L_k(t)
+         * τ_ij(t+1) = Σ_k Δτ_ij^k(t) + ρ * τ_ij(t)
          */
         private void updatePheromonesAndRestart() {
-            // Испарение
+            // 1) Сохраняем старые значения для формулы τ_new = ρ * τ_old + Σ Δτ
+            double[][] oldPheromone = new double[nodeCount][nodeCount];
             for (int i = 0; i < nodeCount; i++) {
-                for (int j = 0; j < nodeCount; j++) {
-                    pheromone[i][j] *= (1.0 - RHO);
-                }
+                System.arraycopy(pheromone[i], 0, oldPheromone[i], 0, nodeCount);
             }
 
-            // Обновление по маршрутам всех муравьёв
+            // 2) Обнуляем матрицу под новые значения (будем сюда накапливать Σ Δτ)
+            for (int i = 0; i < nodeCount; i++) {
+                Arrays.fill(pheromone[i], 0.0);
+            }
+
+            // 3) Добавляем вклады от всех муравьёв: Σ_k Δτ_ij^k(t) = Σ_k Q / L_k(t) по рёбрам их маршрутов
             for (Ant ant : ants) {
                 if (ant.tourIndex < 2) continue; // маршрут слишком короткий
 
@@ -464,13 +470,18 @@ public class AntColonyDemo extends JFrame {
                 }
             }
 
+            // 4) Добавляем компонент "ρ * τ_old" для каждого ребра
+            for (int i = 0; i < nodeCount; i++) {
+                for (int j = 0; j < nodeCount; j++) {
+                    pheromone[i][j] += RHO * oldPheromone[i][j];
+                }
+            }
+
             // Новое поколение муравьёв
             initAnts();
             iteration++;
         }
     }
-
-    // ==== Точка входа ====
 
     /**
      * Панель отрисовки: граф, ферменты, муравьи, лучший маршрут.
@@ -516,7 +527,7 @@ public class AntColonyDemo extends JFrame {
                 for (int i = 0; i < n; i++) {
                     for (int j = i + 1; j < n; j++) {
                         double tau = simulation.getPheromone(i, j);
-                        if (tau <= 1e-5) continue;
+                        if (tau <= 1e-5) continue;   // мелкий порог отрисовки
 
                         float ratio = (float) (tau / maxTau);
                         if (ratio < 0f) ratio = 0f;

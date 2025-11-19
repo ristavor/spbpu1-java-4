@@ -58,15 +58,17 @@ Where:
 
 **Key principle:** A short path receives high pheromone intensity. A long path receives low pheromone intensity.
 
-**Pheromone Evaporation:**
+**Pheromone Update Rule:**
 
 ```
-τ(r,u) ← (1 - ρ) · τ(r,u) + Σ Δτ_k(r,u)
-                              k
+τ(r,u) ← Σ Δτ_k(r,u) + ρ · τ(r,u)
+         k
 ```
 
 Where:
-- `ρ` — evaporation coefficient (0 < ρ < 1)
+
+- `ρ` — pheromone persistence coefficient (0 < ρ < 1)
+- Higher ρ means pheromones persist longer (less evaporation)
 
 ## 🚀 Features
 
